@@ -13,7 +13,7 @@
 #        NOTES: ---
 #       AUTHOR: SPC Steve J Pollei
 # ORGANIZATION: United States Army Reserve
-#      VERSION: 0.0.1
+#      VERSION: 0.0.2
 #     REVISION: ---
 #     # License: GPLv3+
 #===============================================================================
@@ -21,17 +21,42 @@
 use strict;
 use warnings;
 use utf8;
-use 5.018;
+use 5.016;
+
+use Convert::ASN1;
+# http://search.cpan.org/dist/Convert-ASN1/lib/Convert/ASN1.pod
+use Convert::PEM;
+# http://search.cpan.org/~btrott/Convert-PEM-0.08/lib/Convert/PEM.pm
+use Crypt::X509;
+# http://search.cpan.org/~ajung/Crypt-X509-0.51/lib/Crypt/X509.pm
+use MIME::Base64;
+# http://perldoc.perl.org/MIME/Base64.html
+
+# https://metacpan.org/pod/Gtk3
+# https://github.com/GNOME/perl-Gtk3
+# https://github.com/perl6/gtk-simple/
+
 
 say $ENV{'HOME'};
 
 my $home_dir = $ENV{'HOME'};
+# require a sane environ HOME, PATH, USER
+# USER(bsd) USERNAME LOGNAME(sysv)
+# HOME should be /home/${USERNAME} , /home/foo/${USERNAME}
+# UT_NAMESIZE utmp name limits us to 31 plus null
+# http://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
+# Portable Filename Character Set, defined in 3.276
+#              A-Z, a-z, 0-9, <period>, <underscore>, and <hyphen>
 my @profiles;
+my @lib_dirs = [ '/lib/' , '/lib64/', '/usr/lib64' ];
+# have a list of potential lib directories
+# /usr/lib64/libcoolkeypk11.so
+#
 my $pname=$ARGV[0];
 my $line;
 
-die unless $home_dir =~ /^\/home\/[a-zA-Z][a-zA-Z0-9_]{0,30}\/?$/ ;
-die unless $ARGV[0] =~ /^[a-zA-Z][a-zA-Z0-9_]{0,30}$/ ;
+die unless $home_dir =~ /^\/home\/[a-zA-Z][a-zA-Z0-9_-]{0,30}\/?$/ ;
+die unless $ARGV[0] =~ /^(USGOV-DOD-|)[a-zA-Z][a-zA-Z0-9_-]{0,30}$/ ;
 die unless -d $home_dir;
 
 my $ff_dir= $home_dir . '/.mozilla/firefox/';
@@ -39,6 +64,10 @@ say $ff_dir;
 die unless -d $ff_dir;
 die unless -f ($ff_dir . 'profiles.ini');
 
+# http://kb.mozillazine.org/Transferring_data_to_a_new_profile_-_Firefox
+# http://kb.mozillazine.org/Profile_folder_-_Firefox
+
+# find the profile given on the command line
 opendir(my $dh, $ff_dir) || die ;
 #@profiles = grep { /^[a-zA-Z0-9]{1,12}\.[a-zA-Z][a-zA-Z0-9_]{0,30}$/ && -d ($ff_dir . $_) } readdir($dh);
 @profiles = grep { /^[a-zA-Z0-9]{1,12}\.${pname}$/ && -d ($ff_dir . $_) } readdir($dh);
@@ -67,6 +96,11 @@ say 'still alive';
 # add anything that isn't in there yet
 exit;
 
+# https://tools.ietf.org/html/rfc5280#section-4.2.1.10
+# Internet X.509 PKI Certificate -- Name Constraints
+# .gov .mil
+# ASN1 OID 2.5.29.30
+#
 # certutil -A -n "CN=My SSL Certificate" -t "u,u,u" -d sql:/home/my/sharednssdb -i /home/example-certs/cert.cer
 # certutil -A -n "CN=DoD foo" -t "CT,C,c" -d dbm:/home/foo/.mozilla/firefox/foo.bar/ -i dod/dod_ca-123.pem -a
 # certutil -A -n "CN=DoD foo" -t "CT,C,c" -d dbm:/home/foo/.mozilla/firefox/foo.bar/ -i dod/dod_ca-123.cer 
