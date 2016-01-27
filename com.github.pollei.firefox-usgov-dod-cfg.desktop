@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=Firefox config for US Government DOD
 Encoding=UTF-8
-Exec=firefox-usgov-dod-cfg-gui.pl
-Comment=setup cacard and load CA certs in a firefox profile
+Exec=firefox-usgov-dod-cfg.pl --gui
+Comment=setup cac card and load CA certs in a firefox profile
 # Comment[jbo@Latn]=coirodo
 # PATH=~/.firefox/
 Type=Application
